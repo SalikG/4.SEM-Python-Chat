@@ -25,12 +25,12 @@ class Application():
         password_label = tk.Label(self.login_frame, text="Password")
         self.password = tk.StringVar()
         self.password.set("")
-        password_input_field = tk.Entry(self.login_frame, textvariable=self.password)
+        password_input_field = tk.Entry(self.login_frame, textvariable=self.password, show="*")
         # Binder input field til 'enter' kommando fra keyboard og kalder 'send' metoden
         password_input_field.bind("<Return>", lambda e: self.send_login())
 
         btn_login = tk.Button(self.login_frame, text="Login", bg="green", command = self.send_login)
-        btn_register = tk.Button(self.login_frame, text="Register", bg="blue", command=lambda: self.raise_frame(self.register_frame))
+        btn_register = tk.Button(self.login_frame, text="Register", bg="lightblue", command=lambda: self.raise_frame(self.register_frame))
 
         # PACKING_START
         username_label.pack(side=tk.TOP)
@@ -92,9 +92,12 @@ class Application():
 
     # bliver kaldt hvis server sender action: login_failed
     def login_failed(self):
+        self.username.set("")
+        self.password.set("")
         login_failed = tk.Label(self.login_frame, text="LOGIN FAILED", bg="red")
         login_failed.pack(side=tk.TOP)
 
+    # Bliver kaldt når client er logget ind
     def chat_frame(self):
         msg_frame = tk.Frame(self.master)
 
@@ -118,13 +121,16 @@ class Application():
         msg_list.pack()
         self.master.geometry("400x540")
         msg_frame.grid(row=0, column=0, padx=4, pady=4)
+        msg_frame.grid
         # PACKING_END
         msg_frame.tkraise()
 
+    # Bliver kaldt når et frame skal være øverst
     def raise_frame(self, frame=tk.Frame):
         frame.tkraise()
 
     def send_login(self):
+        # tjekker om der er mellemrum i username password og nickname
         if self.reg_login_input_validation(self.username.get()) and self.reg_login_input_validation(self.password.get()):
             msg = {"action": "login", "username": self.username.get(), "password": self.password.get()}
             data = pickle.dumps(msg)
@@ -138,11 +144,11 @@ class Application():
         message = {"action":"msg", "msg":msg.get(), "nickname":self.nickname}
         print("Sending message:  ", message)
         msg.set("")
-
         data = pickle.dumps(message)
         mySocket.send(data)
 
     def send_register(self):
+        # tjekker om der er mellemrum i username password og nickname
         if self.reg_login_input_validation(self.register_username.get()) == True and \
                 self.reg_login_input_validation(self.register_nickname.get()) and \
                 self.reg_login_input_validation(self.register_password.get()) == True:
