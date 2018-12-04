@@ -19,7 +19,7 @@ def acceptConnections():
     names = 0
     while True:
         conn, addr = connection.accept()
-        client_dict = {"NICKNAME": names, "CONNECTION_TS": time.time(), "CLIENT": conn, "ROOM": "room_1"}
+        client_dict = {"NICKNAME": names, "CONNECTION_TS": time.time(), "CLIENT": conn, "ROOM": "Black Hats"}
         clients.append(client_dict)
         names += 1
         print("New Client Connected: ", addr)

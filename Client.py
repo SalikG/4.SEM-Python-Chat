@@ -9,7 +9,7 @@ class Application():
     def __init__(self, master):
         self.master = master
         self.nickname = ""
-        self.room = "room_1"
+        self.room = "Black Hats"
         # --------------------GUI_START-----------------------
 
         master.geometry("300x300")
@@ -116,15 +116,19 @@ class Application():
         # Binder input field til 'enter' kommando fra keyboard og kalder 'send' metoden
         msg_input_field.bind("<Return>", lambda e: self.send())
         btn_send = tk.Button(msg_frame, text="Send", bg="green", command=self.send)
-        btn_room1 = tk.Button(btn_room_frame, text="Black Hats", bg="lightgreen", fg="black", command=lambda: self.send_room("room_1"))
-        btn_room2 = tk.Button(btn_room_frame, text="White Hats", bg="lightgreen", fg="white",command=lambda: self.send_room("room_2"))
-        btn_room3 = tk.Button(btn_room_frame, text="Grey Hats", bg="lightgreen", fg="grey",command=lambda: self.send_room("room_3"))
+        global lbl_room
+        lbl_room = tk.Label(btn_room_frame, text=self.room, bg="yellow", fg="red", padx=2, pady=7)
+        btn_room1 = tk.Button(btn_room_frame, text="Black Hats", bg="lightgreen", fg="black", command=lambda: self.send_room("Black Hats"))
+        btn_room2 = tk.Button(btn_room_frame, text="White Hats", bg="lightgreen", fg="white",command=lambda: self.send_room("White Hats"))
+        btn_room3 = tk.Button(btn_room_frame, text="Grey Hats", bg="lightgreen", fg="grey",command=lambda: self.send_room("Grey Hats"))
 
         # PACKING_START
+        lbl_room.pack(side=tk.TOP)
         btn_room1.pack(side=tk.TOP)
         btn_room2.pack(side=tk.TOP)
         btn_room3.pack(side=tk.TOP)
         btn_send.pack(side=tk.BOTTOM)
+
         msg_input_field.pack(side=tk.BOTTOM, fill=tk.X)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         msg_list.pack(side=tk.LEFT, fill=tk.BOTH)
@@ -169,7 +173,11 @@ class Application():
 
     def send_room(self, room):
         self.room = room
-        msg = {"action": "join_room", "room": room}
+        global lbl_room
+        lbl_room["text"] = room
+        msg = {"action": "join_room", "room": room, "nickname": self.nickname}
+        global msg_list
+        msg_list.delete(0, tk.END)
         data = pickle.dumps(msg)
         mySocket.send(data)
 
@@ -208,6 +216,9 @@ def receive():
                 app.password.set("")
                 app.nickname = msg["nickname"]
                 app.chat_frame()
+            elif msg["action"] == "join_room":
+                msg_list.insert(tk.END, msg["nickname"] + " has join the " + app.room)
+                msg_list.see(tk.END)
             elif msg["action"] == "login_failed":
                 app.login_failed()
                 print("login FAILED")
