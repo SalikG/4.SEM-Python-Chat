@@ -9,6 +9,7 @@ class Application():
     def __init__(self, master):
         self.master = master
         self.nickname = ""
+        self.room = "room_1"
         # --------------------GUI_START-----------------------
 
         master.geometry("300x300")
@@ -99,7 +100,10 @@ class Application():
 
     # Bliver kaldt når client er logget ind
     def chat_frame(self):
+        self.login_frame.grid_remove()
+        self.register_frame.grid_remove()
         msg_frame = tk.Frame(self.master)
+        btn_room_frame = tk.Frame(self.master)
 
         scrollbar = tk.Scrollbar(msg_frame)
         global msg_list
@@ -112,16 +116,21 @@ class Application():
         # Binder input field til 'enter' kommando fra keyboard og kalder 'send' metoden
         msg_input_field.bind("<Return>", lambda e: self.send())
         btn_send = tk.Button(msg_frame, text="Send", bg="green", command=self.send)
+        btn_room1 = tk.Button(btn_room_frame, text="Black Hats", bg="lightgreen", fg="black", command=lambda: self.send_room("room_1"))
+        btn_room2 = tk.Button(btn_room_frame, text="White Hats", bg="lightgreen", fg="white",command=lambda: self.send_room("room_2"))
+        btn_room3 = tk.Button(btn_room_frame, text="Grey Hats", bg="lightgreen", fg="grey",command=lambda: self.send_room("room_3"))
 
         # PACKING_START
+        btn_room1.pack(side=tk.TOP)
+        btn_room2.pack(side=tk.TOP)
+        btn_room3.pack(side=tk.TOP)
         btn_send.pack(side=tk.BOTTOM)
         msg_input_field.pack(side=tk.BOTTOM, fill=tk.X)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         msg_list.pack(side=tk.LEFT, fill=tk.BOTH)
-        msg_list.pack()
         self.master.geometry("400x540")
-        msg_frame.grid(row=0, column=0, padx=4, pady=4)
-        msg_frame.grid
+        btn_room_frame.grid(row=0, column=0)
+        msg_frame.grid(row=0, column=1, padx=4, pady=4)
         # PACKING_END
         msg_frame.tkraise()
 
@@ -138,10 +147,9 @@ class Application():
         else:
             messagebox.showerror("Error", "There cant be 'Spaces' in the text!")
 
-
     def send(self):
         global msg
-        message = {"action":"msg", "msg":msg.get(), "nickname":self.nickname}
+        message = {"action":"msg", "room": self.room, "msg":msg.get(), "nickname":self.nickname}
         print("Sending message:  ", message)
         msg.set("")
         data = pickle.dumps(message)
@@ -158,6 +166,12 @@ class Application():
             mySocket.send(data)
         else:
             messagebox.showerror("Error", "There cant be 'Spaces' in the text!")
+
+    def send_room(self, room):
+        self.room = room
+        msg = {"action": "join_room", "room": room}
+        data = pickle.dumps(msg)
+        mySocket.send(data)
 
     def reg_login_input_validation(self, inpt):
         if ' ' in inpt:

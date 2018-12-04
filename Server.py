@@ -19,7 +19,7 @@ def acceptConnections():
     names = 0
     while True:
         conn, addr = connection.accept()
-        client_dict = {"NICKNAME": names, "CONNECTION_TS": time.time(), "CLIENT": conn}
+        client_dict = {"NICKNAME": names, "CONNECTION_TS": time.time(), "CLIENT": conn, "ROOM": "room_1"}
         clients.append(client_dict)
         names += 1
         print("New Client Connected: ", addr)
@@ -29,10 +29,10 @@ def acceptConnections():
 def broadcast_messages():
     while True:
         msg = messages.get()
+        data = pickle.dumps(msg)
         for c in clients:
-            data = pickle.dumps(msg)
-
-            c["CLIENT"].send(data)
+            if c["ROOM"] == msg["room"]:
+                c["CLIENT"].send(data)
 
 def client_thread(conn):
     while True:
@@ -50,6 +50,11 @@ def client_thread(conn):
             conn.send(response_data)
         elif msg["action"] == "msg":
             messages.put(msg)
+        elif msg["action"] == "join_room":              #if statement for at joine et rum
+            for client_index in range(clients.__len__()):
+                if clients[client_index]["CLIENT"] == conn:
+                    clients[client_index]["ROOM"] = msg["room"]
+                    messages.put(msg)
         elif msg["action"] == "login":
             file = open("users.txt", "r")
             users = file.read().splitlines()
@@ -57,7 +62,7 @@ def client_thread(conn):
             for line_index in  range(users.__len__()):
                 temp_user = users[line_index].split(" ")
                 if temp_user[0] == msg["username"] and temp_user[2] == msg["password"]:
-                    login_msg = pickle.dumps({"action":"msg", "msg":temp_user[1] + " has joined the room"})
+                    login_msg = pickle.dumps({"action":"msg", "msg":temp_user[1] + " has joined Hackers Paradise"})
                     for client_index in range(clients.__len__()):
                         if clients[client_index]["CLIENT"] == conn:
                             clients[client_index]["NICKNAME"] = temp_user[1]
