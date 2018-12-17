@@ -9,10 +9,10 @@ class Application():
     def __init__(self, master):
         self.master = master
         self.nickname = ""
-        self.room = "Black Hats"
+        self.room = ""
         # --------------------GUI_START-----------------------
 
-        master.geometry("300x300")
+        master.geometry("250x250")
         # LOGIN_start
         self.login_frame = tk.Frame(master)
 
@@ -102,7 +102,9 @@ class Application():
     def chat_frame(self):
         self.login_frame.grid_remove()
         self.register_frame.grid_remove()
+        global msg_frame
         msg_frame = tk.Frame(self.master)
+        global btn_room_frame
         btn_room_frame = tk.Frame(self.master)
 
         scrollbar = tk.Scrollbar(msg_frame)
@@ -119,20 +121,22 @@ class Application():
         global lbl_room
         lbl_room = tk.Label(btn_room_frame, text=self.room, bg="yellow", fg="red", padx=2, pady=7)
         btn_room1 = tk.Button(btn_room_frame, text="Black Hats", bg="lightgreen", fg="black", command=lambda: self.send_room("Black Hats"))
-        btn_room2 = tk.Button(btn_room_frame, text="White Hats", bg="lightgreen", fg="white",command=lambda: self.send_room("White Hats"))
-        btn_room3 = tk.Button(btn_room_frame, text="Grey Hats", bg="lightgreen", fg="grey",command=lambda: self.send_room("Grey Hats"))
+        btn_room2 = tk.Button(btn_room_frame, text="White Hats", bg="lightgreen", fg="white", command=lambda: self.send_room("White Hats"))
+        btn_room3 = tk.Button(btn_room_frame, text="Grey Hats", bg="lightgreen", fg="grey", command=lambda: self.send_room("Grey Hats"))
+        btn_logout = tk.Button(btn_room_frame, text="Logout", bg="red", command=self.send_logout)
 
         # PACKING_START
         lbl_room.pack(side=tk.TOP)
         btn_room1.pack(side=tk.TOP)
         btn_room2.pack(side=tk.TOP)
         btn_room3.pack(side=tk.TOP)
+        btn_logout.pack(side=tk.TOP)
         btn_send.pack(side=tk.BOTTOM)
 
         msg_input_field.pack(side=tk.BOTTOM, fill=tk.X)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         msg_list.pack(side=tk.LEFT, fill=tk.BOTH)
-        self.master.geometry("400x540")
+        self.master.geometry("480x540")
         btn_room_frame.grid(row=0, column=0)
         msg_frame.grid(row=0, column=1, padx=4, pady=4)
         # PACKING_END
@@ -147,7 +151,11 @@ class Application():
         if self.reg_login_input_validation(self.username.get()) and self.reg_login_input_validation(self.password.get()):
             msg = {"action": "login", "username": self.username.get(), "password": self.password.get()}
             data = pickle.dumps(msg)
-            mySocket.send(data)
+            try:
+                mySocket.send(data)
+            except:
+                mySocket.close()
+                self.error_frame("Server is down")
         else:
             messagebox.showerror("Error", "There cant be 'Spaces' in the text!")
 
@@ -157,7 +165,29 @@ class Application():
         print("Sending message:  ", message)
         msg.set("")
         data = pickle.dumps(message)
-        mySocket.send(data)
+        try:
+            mySocket.send(data)
+        except:
+            mySocket.close()
+            self.error_frame("Server is down")
+
+    def send_logout(self):
+        message = {"action":"logout", "nickname":self.nickname, "room":self.room}
+        data = pickle.dumps(message)
+        try:
+            mySocket.send(data)
+        except:
+            mySocket.close()
+            self.error_frame("Server is down")
+        else:
+            global msg_frame
+            msg_frame.grid_remove()
+            global btn_room_frame
+            btn_room_frame.grid_remove()
+            self.master.geometry("250x250")
+
+            self.login_frame.grid()
+            self.register_frame.grid()
 
     def send_register(self):
         # tjekker om der er mellemrum i username password og nickname
@@ -167,7 +197,11 @@ class Application():
             msg = {"action": "reg", "username": self.register_username.get(), "nickname": self.register_nickname.get(),
                    "password": self.register_password.get()}
             data = pickle.dumps(msg)
-            mySocket.send(data)
+            try:
+                mySocket.send(data)
+            except:
+                mySocket.close()
+                self.error_frame("Server is down")
         else:
             messagebox.showerror("Error", "There cant be 'Spaces' in the text!")
 
@@ -179,7 +213,11 @@ class Application():
         global msg_list
         msg_list.delete(0, tk.END)
         data = pickle.dumps(msg)
-        mySocket.send(data)
+        try:
+            mySocket.send(data)
+        except:
+            mySocket.close()
+            self.error_frame("Server is down")
 
     def reg_login_input_validation(self, inpt):
         if ' ' in inpt:
@@ -190,6 +228,12 @@ class Application():
     def error_frame(self, error_msg):
         self.login_frame.grid_remove()
         self.register_frame.grid_remove()
+        if "msg_frame" in globals():
+            global msg_frame
+            msg_frame.grid_remove()
+        if "btn_frame" in globals():
+            global btn_frame
+            btn_frame.grid_remove()
         error_frame = tk.Frame(self.master)
         error_label = tk.Label(error_frame, text=error_msg, bg="red")
         error_label.pack(fill=tk.BOTH)
@@ -215,9 +259,16 @@ def receive():
                 app.username.set("")
                 app.password.set("")
                 app.nickname = msg["nickname"]
+                app.room = "Black Hats"
                 app.chat_frame()
             elif msg["action"] == "join_room":
                 msg_list.insert(tk.END, msg["nickname"] + " has join the " + app.room)
+                msg_list.see(tk.END)
+            elif msg["action"] == "leave_room":
+                msg_list.insert(tk.END, msg["nickname"] + " has left the " + app.room)
+                msg_list.see(tk.END)
+            elif msg["action"] == "logout":
+                msg_list.insert(tk.END, msg["nickname"] + " has logged out from the chat")
                 msg_list.see(tk.END)
             elif msg["action"] == "login_failed":
                 app.login_failed()
@@ -233,25 +284,20 @@ def receive():
         except OSError:
             break
 
-
-
 try:
     host = '127.0.0.1'
     port = 9000
 
-    mySocket = socket.socket()
+    mySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     mySocket.connect((host, port))
     reciever_thread = Thread(target=receive)
     reciever_thread.start()
-
-
 
 except Exception:
     root = tk.Tk()
 
     app = Application(root)
     root.title("Hacker Paradise")
-
     app.error_frame("SERVER ERROR:  server is down or connection is lost")
 
     root.mainloop()
